@@ -49,7 +49,7 @@ app.register_blueprint(assignments_bp, url_prefix='/api/assignments')
 app.register_blueprint(materials_bp, url_prefix='/api/materials')
 
 # Crear tablas
-@app.before_first_request
+@app.before_request
 def create_tables():
     db.create_all()
     
@@ -57,7 +57,7 @@ def create_tables():
     if not User.query.filter_by(email='admin@henry.edu').first():
         admin = User(
             email='admin@henry.edu',
-            full_name='Administrador HENRY',
+            full_name='Mario Carbonó Administrador',
             role='administrador',
             password_hash=generate_password_hash('demo123')
         )
@@ -66,7 +66,7 @@ def create_tables():
     if not User.query.filter_by(email='profesor@henry.edu').first():
         profesor = User(
             email='profesor@henry.edu',
-            full_name='Dr. María González',
+            full_name='Dr. Mario Carbonó',
             role='profesor',
             password_hash=generate_password_hash('demo123')
         )
@@ -75,7 +75,7 @@ def create_tables():
     if not User.query.filter_by(email='estudiante@henry.edu').first():
         estudiante = User(
             email='estudiante@henry.edu',
-            full_name='Juan Carlos Pérez',
+            full_name='Raquel Toloza',
             role='estudiante',
             password_hash=generate_password_hash('demo123')
         )
