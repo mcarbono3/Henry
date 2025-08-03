@@ -12,16 +12,16 @@ load_dotenv()
 
 # Configuración de la aplicación
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'henry-secret-key-2025')
+app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'Marioe03.')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///henry.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'jwt-secret-string')
+app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'Marioe03.')
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=24)
 
 # Inicializar extensiones
 db = SQLAlchemy(app)
 jwt = JWTManager(app)
-CORS(app, origins=["http://localhost:5174", "http://localhost:3000"])
+CORS(app, resources={r"/*": {"origins": "https://mcarbono3.github.io"}})
 
 # Importar modelos
 from models.user import User
