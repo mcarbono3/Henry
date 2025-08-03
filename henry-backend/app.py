@@ -14,8 +14,22 @@ load_dotenv()
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config["JWT_SECRET_KEY"] = os.environ.get("JWT_SECRET_KEY")
+
+# --- Inicio del manejo mejorado de la clave secreta ---
+# Lee la clave secreta desde las variables de entorno de forma segura
+jwt_secret_key = os.environ.get("JWT_SECRET_KEY")
+
+# Verifica si la clave secreta se cargó. Esto es vital para depurar.
+if not jwt_secret_key:
+    # Esto es una advertencia de depuración, no debe estar en producción final.
+    print("WARNING: JWT_SECRET_KEY no se encontró en las variables de entorno. Usando una clave de respaldo.")
+    print("ACTION: Por favor, configura JWT_SECRET_KEY en las variables de entorno de Render.")
+    jwt_secret_key = "SuperSecretKey-Marioe03" # Usa un valor de respaldo robusto
+
+# Asigna la clave a la configuración de la aplicación
+app.config["JWT_SECRET_KEY"] = jwt_secret_key
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=24)
+# --- Fin del manejo mejorado ---
 
 # Inicializar extensiones
 db = SQLAlchemy(app)
@@ -51,7 +65,7 @@ app.register_blueprint(materials_bp, url_prefix='/api/materials')
 @app.before_request
 def create_tables():
     db.create_all()
-    
+
     # Crear usuarios de demostración si no existen
     if not User.query.filter_by(email='admin@henry.edu').first():
         admin = User(
@@ -61,7 +75,7 @@ def create_tables():
             password_hash=generate_password_hash('demo123')
         )
         db.session.add(admin)
-    
+
     if not User.query.filter_by(email='profesor@henry.edu').first():
         profesor = User(
             email='profesor@henry.edu',
@@ -70,7 +84,7 @@ def create_tables():
             password_hash=generate_password_hash('demo123')
         )
         db.session.add(profesor)
-    
+
     if not User.query.filter_by(email='estudiante@henry.edu').first():
         estudiante = User(
             email='estudiante@henry.edu',
@@ -79,7 +93,7 @@ def create_tables():
             password_hash=generate_password_hash('demo123')
         )
         db.session.add(estudiante)
-    
+
     db.session.commit()
 
 # Ruta principal
@@ -134,4 +148,3 @@ def missing_token_callback(error):
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=5000)
-
