@@ -15,21 +15,22 @@ app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# --- Inicio del manejo mejorado de la clave secreta ---
-# Lee la clave secreta desde las variables de entorno de forma segura
+# --- Inicio del manejo robusto de la clave secreta ---
+# Lee la clave secreta desde las variables de entorno
 jwt_secret_key = os.environ.get("JWT_SECRET_KEY")
 
-# Verifica si la clave secreta se cargó. Esto es vital para depurar.
+# **Punto de depuración crucial:** imprime el valor para confirmar que se carga.
+print(f"DEBUG: JWT_SECRET_KEY cargada del entorno: '{jwt_secret_key}'")
+
+# Verifica si la clave se cargó correctamente. Si no, lanza un error para detener la aplicación.
+# Esto asegura que la aplicación no se ejecute con una clave insegura o nula.
 if not jwt_secret_key:
-    # Esto es una advertencia de depuración, no debe estar en producción final.
-    print("WARNING: JWT_SECRET_KEY no se encontró en las variables de entorno. Usando una clave de respaldo.")
-    print("ACTION: Por favor, configura JWT_SECRET_KEY en las variables de entorno de Render.")
-    jwt_secret_key = "SuperSecretKey-Marioe03" # Usa un valor de respaldo robusto
+    raise RuntimeError("La variable de entorno JWT_SECRET_KEY no está configurada. Por favor, establécela en Render y en tu entorno local.")
 
 # Asigna la clave a la configuración de la aplicación
 app.config["JWT_SECRET_KEY"] = jwt_secret_key
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = timedelta(hours=24)
-# --- Fin del manejo mejorado ---
+# --- Fin del manejo robusto ---
 
 # Inicializar extensiones
 db = SQLAlchemy(app)
