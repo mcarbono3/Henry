@@ -43,7 +43,7 @@ from routes.materials import materials_bp
 app.register_blueprint(auth_bp, url_prefix='/api/auth')
 app.register_blueprint(users_bp, url_prefix='/api/users')
 app.register_blueprint(classes_bp, url_prefix='/api/classes')
-app.register_blueprint(presentations_bp, url_prefix='/api/presentations')
+app.register_blueprint(presentations_bp, url_prefix='/api/presentations', strict_slashes=False)
 app.register_blueprint(ai_bp, url_prefix='/api/ai')
 app.register_blueprint(assignments_bp, url_prefix='/api/assignments')
 app.register_blueprint(materials_bp, url_prefix='/api/materials')
