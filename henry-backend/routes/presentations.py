@@ -271,6 +271,7 @@ def update_presentation(presentation_id):
         presentation.audience = data.get('audience', presentation.audience)
         presentation.duration = data.get('duration', presentation.duration)
         presentation.style = data.get('style', presentation.style)
+        presentation.source_type = data.get('source_type', presentation.source_type)
         presentation.source_url = data.get('source_url', presentation.source_url)
 
         db.session.commit()
@@ -309,3 +310,4 @@ def delete_presentation(presentation_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
