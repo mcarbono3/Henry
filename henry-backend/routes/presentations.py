@@ -3,6 +3,7 @@ from flask_jwt_extended import jwt_required, get_jwt_identity
 from models.presentation import Presentation
 from app import db
 from models.user import User # Agregamos la importación del modelo User
+import json
 
 presentations_bp = Blueprint('presentations', __name__)
 
@@ -73,3 +74,4 @@ def delete_presentation(presentation_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
