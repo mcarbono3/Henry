@@ -35,7 +35,13 @@ def handle_presentations():
     """
     # Para GET, el user_id viene como query parameter
     if request.method == 'GET':
-        user_id = request.args.get('user_id', type=int)
+        # Corrección: Obtener el user_id sin el argumento 'type'
+        user_id_str = request.args.get('user_id')
+        try:
+            user_id = int(user_id_str) if user_id_str else None
+        except (ValueError, TypeError):
+            return jsonify({'error': 'El user_id proporcionado no es un número válido'}), 400
+
         if user_id is None:
             return jsonify({'error': 'Falta el user_id en los parámetros de la solicitud'}), 400
         
@@ -43,7 +49,6 @@ def handle_presentations():
             presentations = Presentation.query.filter_by(author_id=user_id).all()
             return jsonify([p.to_dict() for p in presentations]), 200
         except Exception as e:
-            # Manejo de errores genérico para GET
             return jsonify({'error': str(e)}), 500
 
     # Para POST, el user_id viene en el cuerpo (JSON o form-data)
@@ -55,7 +60,13 @@ def handle_presentations():
             else: # Asumir form-data para uploads y links
                 data = request.form
 
-            user_id = data.get('user_id', type=int)
+            # Corrección: Obtener el user_id sin el argumento 'type' y convertirlo
+            user_id_str = data.get('user_id')
+            try:
+                user_id = int(user_id_str) if user_id_str else None
+            except (ValueError, TypeError):
+                return jsonify({'error': 'El user_id proporcionado no es un número válido'}), 400
+
             if user_id is None:
                 return jsonify({'error': 'Falta el user_id en los datos de la solicitud'}), 400
             
@@ -126,8 +137,18 @@ def handle_presentations():
                 if not all(field in data_ai and data_ai[field] for field in required_fields):
                     return jsonify({'error': 'Campos obligatorios faltantes para IA'}), 400
                 
+                # Asumo que el user_id viene en el JSON para este caso
+                user_id_str_ai = data_ai.get('user_id')
+                try:
+                    user_id_ai = int(user_id_str_ai) if user_id_str_ai else None
+                except (ValueError, TypeError):
+                    return jsonify({'error': 'El user_id proporcionado no es un número válido'}), 400
+                
+                if user_id_ai is None:
+                    return jsonify({'error': 'Falta el user_id en los datos de la solicitud'}), 400
+                
                 new_presentation = Presentation(
-                    author_id=user_id,
+                    author_id=user_id_ai,
                     title=data_ai.get('title'),
                     topic=data_ai.get('topic'),
                     audience=data_ai.get('audience'),
@@ -149,15 +170,21 @@ def handle_presentations():
             db.session.rollback()
             return jsonify({'error': str(e)}), 500
 
-# NUEVA RUTA para manejar la actualización de presentaciones (PUT)
+# RUTA para manejar la actualización de presentaciones (PUT)
 @presentations_bp.route('/<int:presentation_id>', methods=['PUT'])
 # @jwt_required() # <--- Deshabilitado: No se requiere token JWT
 def update_presentation(presentation_id):
     """
     Actualiza una presentación por su ID.
-    Ahora no requiere autenticación JWT y recibe el user_id en la solicitud.
+    Ahora no requiere autenticación JWT y recibe el user_id en la URL.
     """
-    user_id = request.args.get('user_id', type=int) # User ID from query param
+    # Corrección: Obtener el user_id sin el argumento 'type'
+    user_id_str = request.args.get('user_id')
+    try:
+        user_id = int(user_id_str) if user_id_str else None
+    except (ValueError, TypeError):
+        return jsonify({'error': 'El user_id proporcionado no es un número válido'}), 400
+
     if user_id is None:
         return jsonify({'error': 'Falta el user_id en los parámetros de la solicitud'}), 400
 
@@ -178,9 +205,6 @@ def update_presentation(presentation_id):
         presentation.duration = data.get('duration', presentation.duration)
         presentation.style = data.get('style', presentation.style)
         presentation.source_url = data.get('source_url', presentation.source_url)
-        # No actualizamos source_type ni content_json directamente aquí,
-        # ya que la lógica de carga/generación es más compleja.
-        # Si se necesita actualizar slides_count o views_count, se haría con lógica específica.
 
         db.session.commit()
         return jsonify(presentation.to_dict()), 200
@@ -196,7 +220,13 @@ def delete_presentation(presentation_id):
     Elimina una presentación por su ID.
     Ahora no requiere autenticación JWT y recibe el user_id en la URL.
     """
-    user_id = request.args.get('user_id', type=int)
+    # Corrección: Obtener el user_id sin el argumento 'type'
+    user_id_str = request.args.get('user_id')
+    try:
+        user_id = int(user_id_str) if user_id_str else None
+    except (ValueError, TypeError):
+        return jsonify({'error': 'El user_id proporcionado no es un número válido'}), 400
+
     if user_id is None:
         return jsonify({'error': 'Falta el user_id en los parámetros de la solicitud'}), 400
     
