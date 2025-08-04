@@ -15,6 +15,10 @@ class Presentation(db.Model):
     slides_count = db.Column(db.Integer, default=0)
     views_count = db.Column(db.Integer, default=0)
     
+    # NUEVOS CAMPOS para manejar la fuente de la presentación
+    source_type = db.Column(db.String(20), default='ai') # 'ai', 'link', 'upload'
+    source_url = db.Column(db.String(500))
+    
     # Contenido generado por IA
     content_json = db.Column(db.Text)  # JSON con slides y metadata
     
@@ -38,6 +42,8 @@ class Presentation(db.Model):
             'views_count': self.views_count,
             'author_id': self.author_id,
             'author_name': self.author.full_name if self.author else None,
+            'source_type': self.source_type, # <--- AÑADIDO
+            'source_url': self.source_url,   # <--- AÑADIDO
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
@@ -72,4 +78,3 @@ class Presentation(db.Model):
     
     def __repr__(self):
         return f'<Presentation {self.title}>'
-
