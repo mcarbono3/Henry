@@ -1,5 +1,7 @@
 from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
+# Eliminamos jwt_required y get_jwt_identity si no se van a usar,
+# pero los mantengo comentados por si quieres volver a activarlos fácilmente.
+# from flask_jwt_extended import jwt_required, get_jwt_identity
 from models.presentation import Presentation
 from app import db
 import json
@@ -23,12 +25,17 @@ if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
 @presentations_bp.route('/', methods=['GET', 'POST'])
-@jwt_required()
+# @jwt_required() # <--- Deshabilitado: No se requiere token JWT
 def handle_presentations():
     """
     Maneja las solicitudes GET para obtener presentaciones y POST para crear una nueva.
+    Ahora no requiere autenticación JWT y usa un user_id fijo para pruebas.
     """
-    user_id = get_jwt_identity()
+    # user_id = get_jwt_identity() # <--- Deshabilitado: No se obtiene la identidad del token
+    # Usamos un ID fijo para las pruebas, por ejemplo, el del usuario administrador.
+    # En un entorno real sin JWT, este user_id debería venir del request (ej. form data, query param)
+    # y ser validado por otro método, o ser para datos públicos.
+    user_id = 1 
 
     if request.method == 'GET':
         try:
@@ -51,7 +58,7 @@ def handle_presentations():
                     return jsonify({'error': 'El link de la presentación es obligatorio'}), 400
                 
                 new_presentation = Presentation(
-                    author_id=user_id,
+                    author_id=user_id, # Usando el user_id fijo
                     title=title,
                     source_type='link',
                     source_url=link_url,
@@ -75,7 +82,7 @@ def handle_presentations():
                     file.save(file_path)
                     
                     new_presentation = Presentation(
-                        author_id=user_id,
+                        author_id=user_id, # Usando el user_id fijo
                         title=title,
                         source_type='upload',
                         source_url=file_path, # Guardamos la ruta del archivo
@@ -97,7 +104,7 @@ def handle_presentations():
                 # ai_content = generate_ai_presentation(data)
                 
                 new_presentation = Presentation(
-                    author_id=user_id,
+                    author_id=user_id, # Usando el user_id fijo
                     title=data.get('title'),
                     topic=data.get('topic'),
                     audience=data.get('audience'),
@@ -120,13 +127,16 @@ def handle_presentations():
             return jsonify({'error': str(e)}), 500
 
 @presentations_bp.route('/<int:presentation_id>', methods=['DELETE'])
-@jwt_required()
+# @jwt_required() # <--- Deshabilitado: No se requiere token JWT
 def delete_presentation(presentation_id):
     """
     Elimina una presentación por su ID.
+    Ahora no requiere autenticación JWT y usa un user_id fijo para pruebas.
     """
+    # user_id = get_jwt_identity() # <--- Deshabilitado: No se obtiene la identidad del token
+    user_id = 1 # Usamos un ID fijo para las pruebas
+
     try:
-        user_id = get_jwt_identity()
         presentation = Presentation.query.filter_by(id=presentation_id, author_id=user_id).first()
 
         if not presentation:
