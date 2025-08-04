@@ -11,7 +11,7 @@ def handle_presentations():
     """
     Maneja las solicitudes GET para obtener presentaciones y POST para crear una nueva.
     """
-    user_id = get_jwt_identity()
+#    user_id = get_jwt_identity()
     
     if request.method == 'GET':
         try:
@@ -71,4 +71,5 @@ def delete_presentation(presentation_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
 
