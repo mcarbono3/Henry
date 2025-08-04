@@ -29,7 +29,7 @@ def allowed_file(filename):
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
-# --- Función para parsear PPTX ---
+# --- Función para parsear PPTX (CORREGIDA) ---
 def parse_pptx_to_json(file_path):
     """
     Parsea un archivo .pptx y extrae el título y el contenido de las diapositivas.
@@ -46,7 +46,8 @@ def parse_pptx_to_json(file_path):
             for shape in slide.shapes:
                 if shape.has_text_frame:
                     text_frame = shape.text_frame
-                    if text_frame.has_text:
+                    # CORRECCIÓN: Reemplazamos 'has_text' por una verificación de contenido vacío
+                    if text_frame.text.strip():
                         # Si es un título de marcador de posición (placeholder)
                         if shape.is_placeholder and shape.placeholder_format.type == 1: # Título
                             title = text_frame.text.strip()
@@ -99,10 +100,13 @@ def handle_presentations():
     # Para POST, el user_id viene en el cuerpo (JSON o form-data)
     elif request.method == 'POST':
         try:
+            # MEJORA: Lógica más robusta para determinar el tipo de fuente y datos
             if request.content_type and 'application/json' in request.content_type:
                 data = request.get_json()
-            else: # Asumir form-data para uploads y links
+                source_type = data.get('source_type', 'ai')
+            else: # Asumimos 'form-data' para subidas de archivos
                 data = request.form
+                source_type = data.get('source_type', 'upload')
 
             user_id_str = data.get('user_id')
             try:
@@ -113,26 +117,18 @@ def handle_presentations():
             if user_id is None:
                 return jsonify({'error': 'Falta el user_id en los datos de la solicitud'}), 400
             
-            source_type = data.get('source_type', 'ai') # Por defecto, generamos con IA
-
             if source_type == 'link':
                 link_url = data.get('source_url')
-                title = data.get('title', 'Presentación Externa')
-                topic = data.get('topic', 'General') 
-                audience = data.get('audience', 'Público general')
-                duration = data.get('duration', 'N/A')
-                style = data.get('style', 'professional')
-                
                 if not link_url:
                     return jsonify({'error': 'El link de la presentación es obligatorio'}), 400
                 
                 new_presentation = Presentation(
                     author_id=user_id,
-                    title=title,
-                    topic=topic,
-                    audience=audience,
-                    duration=duration,
-                    style=style,
+                    title=data.get('title', 'Presentación Externa'),
+                    topic=data.get('topic', 'General'), 
+                    audience=data.get('audience', 'Público general'),
+                    duration=data.get('duration', 'N/A'),
+                    style=data.get('style', 'professional'),
                     source_type='link',
                     source_url=link_url,
                     content_json=json.dumps({}) 
@@ -157,10 +153,7 @@ def handle_presentations():
                     file_path = os.path.join(UPLOAD_FOLDER, filename)
                     file.save(file_path)
 
-                    # NUEVA LÍNEA: Procesar el archivo PPTX y obtener el JSON
                     presentation_content = parse_pptx_to_json(file_path)
-
-                    # Verificar si la lista de slides tiene contenido
                     slides_count = len(presentation_content.get('slides', []))
                     
                     new_presentation = Presentation(
@@ -172,15 +165,15 @@ def handle_presentations():
                         style=style,
                         source_type='upload',
                         source_url=file_path,
-                        # NUEVA LÍNEA: Guardar el JSON del contenido
                         content_json=json.dumps(presentation_content),
-                        slides_count=slides_count # También se puede actualizar el conteo
+                        slides_count=slides_count
                     )
                 else:
                     return jsonify({'error': 'Formato de archivo no permitido'}), 400
 
             elif source_type == 'ai':
-                data_ai = request.get_json() 
+                # La lógica para 'ai' sigue siendo la misma, ya que espera JSON
+                data_ai = request.get_json()
                 required_fields = ['title', 'topic', 'audience', 'duration', 'style']
                 if not all(field in data_ai and data_ai[field] for field in required_fields):
                     return jsonify({'error': 'Campos obligatorios faltantes para IA'}), 400
