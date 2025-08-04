@@ -6,7 +6,7 @@ from app import db
 presentations_bp = Blueprint('presentations', __name__)
 
 @presentations_bp.route('/', methods=['GET', 'POST'])
-@jwt_required()
+#@jwt_required()
 def handle_presentations():
     """
     Maneja las solicitudes GET para obtener presentaciones y POST para crear una nueva.
@@ -71,3 +71,4 @@ def delete_presentation(presentation_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
+
