@@ -6,13 +6,14 @@ from app import db
 presentations_bp = Blueprint('presentations', __name__)
 
 @presentations_bp.route('/', methods=['GET', 'POST'])
-#@jwt_required()
+# @jwt_required()
 def handle_presentations():
     """
     Maneja las solicitudes GET para obtener presentaciones y POST para crear una nueva.
     """
-#    user_id = get_jwt_identity()
-    
+    # user_id = get_jwt_identity()
+    user_id = 1 # Usar un ID fijo para las pruebas, por ejemplo, el del usuario administrador
+
     if request.method == 'GET':
         try:
             presentations = Presentation.query.filter_by(user_id=user_id).all()
@@ -71,5 +72,3 @@ def delete_presentation(presentation_id):
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
-
-
