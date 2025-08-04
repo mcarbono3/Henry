@@ -7,6 +7,9 @@ import json
 import os
 from werkzeug.utils import secure_filename
 
+# Importar la librería python-pptx
+from pptx import Presentation as PptxPresentation
+
 # Asegúrate de que este import es correcto y que tienes un blueprint 'ai_bp'
 # from routes.ai import generate_ai_presentation
 
@@ -25,6 +28,49 @@ def allowed_file(filename):
 # Asegúrate de que la carpeta de subida existe
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
+
+# --- Función para parsear PPTX ---
+def parse_pptx_to_json(file_path):
+    """
+    Parsea un archivo .pptx y extrae el título y el contenido de las diapositivas.
+    Retorna un diccionario con la estructura {"slides": [...]}.
+    """
+    slides_data = []
+    try:
+        prs = PptxPresentation(file_path)
+        for i, slide in enumerate(prs.slides):
+            slide_content_parts = []
+            title = ""
+            
+            # Intenta obtener el título de la diapositiva
+            for shape in slide.shapes:
+                if shape.has_text_frame:
+                    text_frame = shape.text_frame
+                    if text_frame.has_text:
+                        # Si es un título de marcador de posición (placeholder)
+                        if shape.is_placeholder and shape.placeholder_format.type == 1: # Título
+                            title = text_frame.text.strip()
+                        else:
+                            slide_content_parts.append(text_frame.text.strip())
+            
+            # Si no se encontró un título de marcador de posición, usa el primer texto o un título por defecto
+            if not title and slide_content_parts:
+                title = slide_content_parts[0] # Usa la primera parte del contenido como título
+                slide_content_parts = slide_content_parts[1:] # Elimina el primer elemento si se usó como título
+            elif not title:
+                title = f"Diapositiva {i + 1}" # Título por defecto
+
+            slides_data.append({
+                "title": title,
+                "content": "\n".join(slide_content_parts)
+            })
+    except Exception as e:
+        print(f"Error al parsear el archivo PPTX: {e}")
+        # En caso de error, retorna un JSON vacío para evitar fallos
+        return {"slides": []}
+    
+    return {"slides": slides_data}
+
 
 @presentations_bp.route('/', methods=['GET', 'POST'])
 # @jwt_required() # <--- Deshabilitado: No se requiere token JWT
@@ -110,6 +156,12 @@ def handle_presentations():
                     filename = secure_filename(file.filename)
                     file_path = os.path.join(UPLOAD_FOLDER, filename)
                     file.save(file_path)
+
+                    # NUEVA LÍNEA: Procesar el archivo PPTX y obtener el JSON
+                    presentation_content = parse_pptx_to_json(file_path)
+
+                    # Verificar si la lista de slides tiene contenido
+                    slides_count = len(presentation_content.get('slides', []))
                     
                     new_presentation = Presentation(
                         author_id=user_id,
@@ -120,7 +172,9 @@ def handle_presentations():
                         style=style,
                         source_type='upload',
                         source_url=file_path,
-                        content_json=json.dumps({}) 
+                        # NUEVA LÍNEA: Guardar el JSON del contenido
+                        content_json=json.dumps(presentation_content),
+                        slides_count=slides_count # También se puede actualizar el conteo
                     )
                 else:
                     return jsonify({'error': 'Formato de archivo no permitido'}), 400
