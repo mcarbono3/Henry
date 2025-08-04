@@ -30,12 +30,11 @@ if not os.path.exists(UPLOAD_FOLDER):
 # @jwt_required() # <--- Deshabilitado: No se requiere token JWT
 def handle_presentations():
     """
-    Maneja las solicitudes GET para obtener presentaciones y POST para crear una nueva.
-    Ahora no requiere autenticación JWT y recibe el user_id en la solicitud.
+    Maneja las solicitudes GET para obtener todas las presentaciones de un usuario
+    y POST para crear una nueva presentación (IA, link o archivo).
     """
     # Para GET, el user_id viene como query parameter
     if request.method == 'GET':
-        # Corrección: Obtener el user_id sin el argumento 'type'
         user_id_str = request.args.get('user_id')
         try:
             user_id = int(user_id_str) if user_id_str else None
@@ -54,13 +53,11 @@ def handle_presentations():
     # Para POST, el user_id viene en el cuerpo (JSON o form-data)
     elif request.method == 'POST':
         try:
-            # Determinar si es JSON o form-data
             if request.content_type and 'application/json' in request.content_type:
                 data = request.get_json()
             else: # Asumir form-data para uploads y links
                 data = request.form
 
-            # Corrección: Obtener el user_id sin el argumento 'type' y convertirlo
             user_id_str = data.get('user_id')
             try:
                 user_id = int(user_id_str) if user_id_str else None
@@ -75,7 +72,6 @@ def handle_presentations():
             if source_type == 'link':
                 link_url = data.get('source_url')
                 title = data.get('title', 'Presentación Externa')
-                # Asegurarse de que los campos NotNull tengan valores por defecto
                 topic = data.get('topic', 'General') 
                 audience = data.get('audience', 'Público general')
                 duration = data.get('duration', 'N/A')
@@ -93,7 +89,7 @@ def handle_presentations():
                     style=style,
                     source_type='link',
                     source_url=link_url,
-                    content_json=json.dumps({}) # Asegurar que content_json no sea null
+                    content_json=json.dumps({}) 
                 )
             
             elif source_type == 'upload':
@@ -102,7 +98,6 @@ def handle_presentations():
                 
                 file = request.files['file']
                 title = data.get('title', 'Presentación Subida')
-                # Asegurarse de que los campos NotNull tengan valores por defecto
                 topic = data.get('topic', 'General') 
                 audience = data.get('audience', 'Público general')
                 duration = data.get('duration', 'N/A')
@@ -125,19 +120,17 @@ def handle_presentations():
                         style=style,
                         source_type='upload',
                         source_url=file_path,
-                        content_json=json.dumps({}) # Asegurar que content_json no sea null
+                        content_json=json.dumps({}) 
                     )
                 else:
                     return jsonify({'error': 'Formato de archivo no permitido'}), 400
 
             elif source_type == 'ai':
-                # Para AI, esperamos JSON
                 data_ai = request.get_json() 
                 required_fields = ['title', 'topic', 'audience', 'duration', 'style']
                 if not all(field in data_ai and data_ai[field] for field in required_fields):
                     return jsonify({'error': 'Campos obligatorios faltantes para IA'}), 400
                 
-                # Asumo que el user_id viene en el JSON para este caso
                 user_id_str_ai = data_ai.get('user_id')
                 try:
                     user_id_ai = int(user_id_str_ai) if user_id_str_ai else None
@@ -170,6 +163,35 @@ def handle_presentations():
             db.session.rollback()
             return jsonify({'error': str(e)}), 500
 
+# NUEVA RUTA: Obtener una presentación específica por ID (GET)
+@presentations_bp.route('/<int:presentation_id>', methods=['GET'])
+# @jwt_required() # <--- Deshabilitado: No se requiere token JWT
+def get_presentation(presentation_id):
+    """
+    Obtiene una presentación específica por su ID y el user_id.
+    """
+    user_id_str = request.args.get('user_id')
+    try:
+        user_id = int(user_id_str) if user_id_str else None
+    except (ValueError, TypeError):
+        return jsonify({'error': 'El user_id proporcionado no es un número válido'}), 400
+
+    if user_id is None:
+        return jsonify({'error': 'Falta el user_id en los parámetros de la solicitud'}), 400
+
+    try:
+        presentation = Presentation.query.filter_by(id=presentation_id, author_id=user_id).first()
+
+        if not presentation:
+            return jsonify({'error': 'Presentación no encontrada o no pertenece al usuario'}), 404
+
+        # Retorna la presentación, incluyendo el content_json
+        return jsonify(presentation.to_dict()), 200
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 # RUTA para manejar la actualización de presentaciones (PUT)
 @presentations_bp.route('/<int:presentation_id>', methods=['PUT'])
 # @jwt_required() # <--- Deshabilitado: No se requiere token JWT
@@ -178,7 +200,6 @@ def update_presentation(presentation_id):
     Actualiza una presentación por su ID.
     Ahora no requiere autenticación JWT y recibe el user_id en la URL.
     """
-    # Corrección: Obtener el user_id sin el argumento 'type'
     user_id_str = request.args.get('user_id')
     try:
         user_id = int(user_id_str) if user_id_str else None
@@ -198,7 +219,6 @@ def update_presentation(presentation_id):
         if not data:
             return jsonify({'error': 'No se proporcionaron datos para actualizar'}), 400
 
-        # Actualizar campos de la presentación
         presentation.title = data.get('title', presentation.title)
         presentation.topic = data.get('topic', presentation.topic)
         presentation.audience = data.get('audience', presentation.audience)
@@ -220,7 +240,6 @@ def delete_presentation(presentation_id):
     Elimina una presentación por su ID.
     Ahora no requiere autenticación JWT y recibe el user_id en la URL.
     """
-    # Corrección: Obtener el user_id sin el argumento 'type'
     user_id_str = request.args.get('user_id')
     try:
         user_id = int(user_id_str) if user_id_str else None
