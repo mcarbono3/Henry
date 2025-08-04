@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from models.presentation import Presentation
 from app import db
+from models.user import User # Agregamos la importación del modelo User
 
 presentations_bp = Blueprint('presentations', __name__)
 
@@ -11,12 +12,12 @@ def handle_presentations():
     """
     Maneja las solicitudes GET para obtener presentaciones y POST para crear una nueva.
     """
-    # user_id = get_jwt_identity()
-    user_id = 1 # Usar un ID fijo para las pruebas, por ejemplo, el del usuario administrador
+    #user_id = get_jwt_identity()
+    user_id = 1 # Usamos el ID fijo para las pruebas
 
     if request.method == 'GET':
         try:
-            presentations = Presentation.query.filter_by(user_id=user_id).all()
+            presentations = Presentation.query.filter_by(author_id=user_id).all()
             return jsonify([p.to_dict() for p in presentations]), 200
         except Exception as e:
             return jsonify({'error': str(e)}), 500
@@ -35,13 +36,13 @@ def handle_presentations():
             # Una vez implementada la IA, se actualizará `content` con la respuesta real.
             
             new_presentation = Presentation(
-                user_id=user_id,
+                author_id=user_id, # **CORREGIDO:** Aquí se usaba user_id
                 title=data.get('title'),
                 topic=data.get('topic'),
                 audience=data.get('audience'),
                 duration=data.get('duration'),
                 style=data.get('style'),
-                content={} 
+                content_json=json.dumps({}) # **CORREGIDO:** se usa content_json
             )
             
             db.session.add(new_presentation)
@@ -60,7 +61,7 @@ def delete_presentation(presentation_id):
     """
     try:
         user_id = get_jwt_identity()
-        presentation = Presentation.query.filter_by(id=presentation_id, user_id=user_id).first()
+        presentation = Presentation.query.filter_by(id=presentation_id, author_id=user_id).first() # **CORREGIDO:** author_id
 
         if not presentation:
             return jsonify({'error': 'Presentación no encontrada o no pertenece al usuario'}), 404
